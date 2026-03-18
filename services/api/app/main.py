@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.router import api_router
+from app.api.routes.ws import router as ws_router
 from app.dependencies import get_runtime
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.settings import get_settings
@@ -33,3 +34,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(api_router)
+app.include_router(ws_router)

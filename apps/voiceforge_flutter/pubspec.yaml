@@ -41,6 +41,8 @@ dependencies:
   just_audio: ^0.9.43
   record: ^5.1.2
   permission_handler: ^11.3.1
+  shared_preferences: ^2.3.0
+  web_socket_channel: ^3.0.0
 
 dev_dependencies:
   flutter_test:
