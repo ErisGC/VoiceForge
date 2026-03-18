@@ -4,11 +4,17 @@ import '../core/widgets/voiceforge_shell.dart';
 import '../features/auth/auth_screens.dart';
 import '../features/conversions/conversion_screens.dart';
 import '../features/dashboard/dashboard_screen.dart';
+import '../features/onboarding/onboarding_screen.dart';
 import '../features/voices/voice_screens.dart';
 
 final GoRouter router = GoRouter(
   initialLocation: '/login',
   routes: [
+    GoRoute(
+      path: '/onboarding',
+      pageBuilder: (context, state) =>
+          const NoTransitionPage(child: OnboardingScreen()),
+    ),
     GoRoute(
       path: '/login',
       pageBuilder: (context, state) =>
