@@ -1,0 +1,2 @@
+-e ./packages/voiceforge_core
+pydantic-settings>=2.6,<3.0

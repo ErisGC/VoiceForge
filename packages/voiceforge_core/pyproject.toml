@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=70", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voiceforge-core"
+version = "0.1.0"
+description = "Shared domain, storage, audio, and job orchestration components for VoiceForge."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "librosa>=0.10,<1.0",
+  "mutagen>=1.47,<2.0",
+  "numpy>=1.26,<3.0",
+  "pydantic>=2.8,<3.0",
+  "redis>=5.0,<6.0",
+  "scipy>=1.13,<2.0",
+  "soundfile>=0.12,<1.0",
+  "sqlalchemy>=2.0,<3.0",
+  "psycopg[binary]>=3.2,<4.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
