@@ -24,8 +24,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from voiceforge_core.db.base import Base
-from voiceforge_core.db.enums import UserRole
-from voiceforge_core.db.models import User
+from voiceforge_core.db.enums import SubscriptionPlan, SubscriptionStatus, UserRole
+from voiceforge_core.db.models import Subscription, User
 from voiceforge_core.modules.auth.service import AuthService
 
 if TYPE_CHECKING:
@@ -89,6 +89,22 @@ def test_user(db_session: Session) -> User:
     db_session.add(user)
     db_session.commit()
     return user
+
+
+@pytest.fixture(autouse=True)
+def _test_user_subscription(db_session: Session, test_user: User) -> None:
+    """Give the test user an Unlimited subscription so quota checks pass in integration tests."""
+    from datetime import datetime, timedelta, timezone
+
+    sub = Subscription(
+        user_id=test_user.id,
+        plan=SubscriptionPlan.UNLIMITED,
+        status=SubscriptionStatus.ACTIVE,
+        current_period_start=datetime.now(timezone.utc) - timedelta(days=1),
+        current_period_end=datetime.now(timezone.utc) + timedelta(days=30),
+    )
+    db_session.add(sub)
+    db_session.commit()
 
 
 @pytest.fixture()

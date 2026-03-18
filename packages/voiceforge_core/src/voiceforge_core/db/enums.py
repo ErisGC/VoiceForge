@@ -49,6 +49,19 @@ class EngineBackend(StrEnum):
     OPENVOICE = "openvoice"
 
 
+class SubscriptionPlan(StrEnum):
+    FREE = "free"
+    PRO = "pro"
+    UNLIMITED = "unlimited"
+
+
+class SubscriptionStatus(StrEnum):
+    ACTIVE = "active"
+    CANCELLED = "cancelled"
+    EXPIRED = "expired"
+    PAST_DUE = "past_due"
+
+
 class AuditEventType(StrEnum):
     AUTH_REGISTER = "auth_register"
     AUTH_LOGIN = "auth_login"
@@ -62,3 +75,8 @@ class AuditEventType(StrEnum):
     CONVERSION_JOB_STARTED = "conversion_job_started"
     CONVERSION_JOB_COMPLETED = "conversion_job_completed"
     CONVERSION_JOB_FAILED = "conversion_job_failed"
+    SUBSCRIPTION_ACTIVATED = "subscription_activated"
+    SUBSCRIPTION_CANCELLED = "subscription_cancelled"
+    SUBSCRIPTION_RENEWED = "subscription_renewed"
+    SUBSCRIPTION_EXPIRED = "subscription_expired"
+    QUOTA_EXCEEDED = "quota_exceeded"

@@ -10,6 +10,7 @@ from app.settings import Settings, get_settings
 from voiceforge_core.db.enums import AuditEventType, VoiceSampleSource
 from voiceforge_core.db.models import User
 from voiceforge_core.modules.audit.service import AuditService
+from voiceforge_core.modules.subscriptions.service import PLAN_LIMITS, SubscriptionService
 from voiceforge_core.modules.voice_profiles.schemas import VoiceProfileCreate, VoiceProfileRead
 from voiceforge_core.modules.voice_profiles.service import VoiceProfileService
 from voiceforge_core.modules.voice_samples.schemas import VoiceSampleRead
@@ -35,6 +36,20 @@ def create_voice_profile(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_db),
 ) -> VoiceProfileRead:
+    # Check profile quota
+    if not SubscriptionService.check_profile_quota(session, current_user.id):
+        plan, _status = SubscriptionService.get_user_plan(session, current_user.id)
+        limits = PLAN_LIMITS[plan]
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error": "quota_exceeded",
+                "plan": plan.value,
+                "limit": limits["max_profiles"],
+                "upgrade_url": "https://voiceforge.app/#precio",
+            },
+        )
+
     try:
         profile = VoiceProfileService.create_profile(session, current_user, payload)
         AuditService.record(

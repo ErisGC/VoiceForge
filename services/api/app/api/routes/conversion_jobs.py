@@ -13,6 +13,7 @@ from voiceforge_core.db.models import User
 from voiceforge_core.modules.audit.service import AuditService
 from voiceforge_core.modules.conversion_jobs.schemas import ConversionJobRead, ConvertedAudioRead
 from voiceforge_core.modules.conversion_jobs.service import ConversionJobService
+from voiceforge_core.modules.subscriptions.service import PLAN_LIMITS, SubscriptionService
 from voiceforge_core.modules.voice_profiles.service import VoiceProfileService
 from voiceforge_core.runtime import RuntimeContainer
 
@@ -83,6 +84,20 @@ async def create_conversion_job(
     runtime: RuntimeContainer = Depends(get_runtime),
     settings: Settings = Depends(get_settings),
 ) -> ConversionJobRead:
+    # Check subscription quota before accepting the job
+    if not SubscriptionService.check_conversion_quota(session, current_user.id):
+        plan, _status = SubscriptionService.get_user_plan(session, current_user.id)
+        limits = PLAN_LIMITS[plan]
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "error": "quota_exceeded",
+                "plan": plan.value,
+                "limit": limits["conversions_per_month"],
+                "upgrade_url": "https://voiceforge.app/#precio",
+            },
+        )
+
     profile = VoiceProfileService.get_for_user(session, current_user.id, voice_profile_id)
     if profile is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Voice profile not found.")
@@ -113,6 +128,8 @@ async def create_conversion_job(
             payload=payload,
             ip_address=request.client.host if request.client else None,
         )
+        # Increment usage counter
+        SubscriptionService.increment_usage(session, current_user.id)
         session.commit()
         session.refresh(job)
         return ConversionJobRead.model_validate(job)

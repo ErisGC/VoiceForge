@@ -13,6 +13,8 @@ from voiceforge_core.db.enums import (
     EngineBackend,
     JobStatus,
     ProcessingStatus,
+    SubscriptionPlan,
+    SubscriptionStatus,
     UserRole,
     VoiceProfileStatus,
     VoiceSampleSource,
@@ -272,6 +274,46 @@ class ConvertedAudio(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     traceability_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     conversion_job: Mapped["ConversionJob"] = relationship(back_populates="converted_audios")
+
+
+class Subscription(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "subscriptions"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    plan: Mapped[SubscriptionPlan] = mapped_column(
+        Enum(SubscriptionPlan, name="subscription_plan"),
+        nullable=False,
+        default=SubscriptionPlan.FREE,
+    )
+    status: Mapped[SubscriptionStatus] = mapped_column(
+        Enum(SubscriptionStatus, name="subscription_status"),
+        nullable=False,
+        default=SubscriptionStatus.ACTIVE,
+    )
+    current_period_start: Mapped[datetime] = mapped_column(nullable=False)
+    current_period_end: Mapped[datetime] = mapped_column(nullable=False)
+    wompi_transaction_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    payment_reference: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    grace_period_end: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    user: Mapped["User"] = relationship(backref="subscriptions")
+
+    __table_args__ = (Index("ix_subscriptions_user_status", "user_id", "status"),)
+
+
+class UsageCounter(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "usage_counters"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    period_month: Mapped[str] = mapped_column(String(7), nullable=False)  # YYYY-MM
+    conversions_used: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    user: Mapped["User"] = relationship(backref="usage_counters")
+
+    __table_args__ = (
+        Index("uq_usage_counters_user_period", "user_id", "period_month", unique=True),
+    )
 
 
 class AuditLog(UUIDPrimaryKeyMixin, Base):
