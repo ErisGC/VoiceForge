@@ -1,5 +1,6 @@
-/// Models for subscription and usage data.
+// Models for subscription and usage data.
 
+/// Summary of a user's current plan and resource usage.
 class UsageSummary {
   final String plan;
   final String status;

@@ -156,5 +156,7 @@ class TestJwtDecoding:
         sig = parts[2]
         tampered_sig = sig[:-1] + ("A" if sig[-1] != "A" else "B")
         tampered_token = f"{parts[0]}.{parts[1]}.{tampered_sig}"
-        with pytest.raises(pyjwt.InvalidSignatureError):
+        # Newer PyJWT versions may raise InvalidSignatureError or
+        # DecodeError depending on key length and tamper position.
+        with pytest.raises((pyjwt.InvalidSignatureError, pyjwt.DecodeError)):
             AuthService.decode_access_token(tampered_token, TEST_SECRET)
