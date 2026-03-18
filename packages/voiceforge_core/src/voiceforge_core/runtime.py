@@ -8,9 +8,10 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from voiceforge_core.audio.contracts import AudioPreprocessor
 from voiceforge_core.audio.pipeline import WaveAudioPreprocessor
+from voiceforge_core.inference.contracts import SpeakerEmbeddingService
 from voiceforge_core.inference.model_registry import (
-    HashSpeakerEmbeddingService,
     build_default_model_registry,
+    build_speaker_embedding_service,
 )
 from voiceforge_core.inference.seed_vc import SeedVCBackendConfig
 from voiceforge_core.jobs.queue import RedisJobQueue
@@ -56,7 +57,7 @@ class RuntimeContainer:
     storage: LocalS3CompatibleStorage
     queue: RedisJobQueue
     audio_preprocessor: AudioPreprocessor
-    embedding_extractor: HashSpeakerEmbeddingService
+    embedding_extractor: SpeakerEmbeddingService
     model_registry: Any
     training_orchestrator: ManifestTrainingOrchestrator
 
@@ -67,7 +68,7 @@ def build_runtime(config: RuntimeConfig) -> RuntimeContainer:
     storage = LocalS3CompatibleStorage(root=config.storage_root, bucket=config.storage_bucket)
     queue = RedisJobQueue(redis_url=config.redis_url, queue_name=config.queue_name)
     audio_preprocessor = WaveAudioPreprocessor()
-    embedding_extractor = HashSpeakerEmbeddingService()
+    embedding_extractor = build_speaker_embedding_service()
     seed_vc_config = SeedVCBackendConfig(
         python_executable=config.seed_vc_python,
         repo_dir=config.seed_vc_repo_dir,
