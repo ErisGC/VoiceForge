@@ -60,11 +60,26 @@ export default function RootLayout({
               name: "VoiceForge",
               applicationCategory: "MultimediaApplication",
               operatingSystem: "Android, Web",
-              offers: {
-                "@type": "Offer",
-                price: "5000",
-                priceCurrency: "COP",
-              },
+              offers: [
+                {
+                  "@type": "Offer",
+                  name: "Gratis",
+                  price: "0",
+                  priceCurrency: "COP",
+                },
+                {
+                  "@type": "Offer",
+                  name: "Pro",
+                  price: "29900",
+                  priceCurrency: "COP",
+                },
+                {
+                  "@type": "Offer",
+                  name: "Unlimited",
+                  price: "79900",
+                  priceCurrency: "COP",
+                },
+              ],
               description:
                 "Aplicación de clonación y transformación de voz con inteligencia artificial.",
             }),

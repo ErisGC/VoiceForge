@@ -1,9 +1,9 @@
 "use client";
 
 import { useUser } from "@auth0/nextjs-auth0/client";
-import { useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { PRICE_DISPLAY, APP_NAME } from "@/lib/constants";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { PLANS, APP_NAME, type PlanId } from "@/lib/constants";
 
 interface CheckoutData {
   publicKey: string;
@@ -15,11 +15,19 @@ interface CheckoutData {
   customerEmail: string;
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const { user, isLoading } = useUser();
+  const searchParams = useSearchParams();
+  const planParam = searchParams.get("plan") as PlanId | null;
+
+  // Default to "pro" if no plan or invalid plan specified
+  const planId: PlanId = planParam && planParam in PLANS && planParam !== "free"
+    ? planParam
+    : "pro";
+  const plan = PLANS[planId];
+
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [dataAccepted, setDataAccepted] = useState(false);
-  const [checkoutData, setCheckoutData] = useState<CheckoutData | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,13 +43,18 @@ export default function CheckoutPage() {
     return (
       <div className="flex min-h-screen items-center justify-center px-4">
         <div className="text-center">
-          <h1 className="text-2xl font-bold">Inicia sesión para comprar</h1>
+          <h1 className="text-2xl font-bold">Inicia sesi&oacute;n para comprar</h1>
           <p className="mt-2 text-text-300">
             Necesitas una cuenta para completar la compra.
           </p>
-          <Button href="/api/auth/login" className="mt-6">
-            Iniciar sesión
-          </Button>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- Auth0 handler is a raw API route, not a Next.js page */}
+          <a
+            href="/api/auth/login"
+            className="mt-6 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary-500 to-accent-violet px-8 py-4 text-base font-semibold text-white shadow-[0_0_24px_rgba(109,124,255,0.3)] transition-all duration-200 hover:shadow-[0_0_32px_rgba(109,124,255,0.45)] hover:brightness-110"
+            role="button"
+          >
+            Iniciar sesi&oacute;n
+          </a>
         </div>
       </div>
     );
@@ -57,14 +70,16 @@ export default function CheckoutPage() {
     try {
       const response = await fetch("/api/payments/create-checkout", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId }),
       });
 
       if (!response.ok) {
-        throw new Error("Error al crear la sesión de pago");
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error ?? "Error al crear la sesi\u00f3n de pago");
       }
 
       const data: CheckoutData = await response.json();
-      setCheckoutData(data);
 
       // Open Wompi checkout widget
       const wompiWidget = (window as WompiWindow).WidgetCheckout;
@@ -110,21 +125,53 @@ export default function CheckoutPage() {
 
       <h1 className="text-2xl font-bold">Completar compra</h1>
       <p className="mt-2 text-text-300">
-        Hola, {user.name ?? user.email}. Estás a un paso de acceder a {APP_NAME}.
+        Hola, {user.name ?? user.email}. Est&aacute;s a un paso de acceder a {APP_NAME}.
       </p>
 
       {/* Order summary */}
       <div className="mt-8 rounded-2xl border border-border-soft bg-surface-800/50 p-6">
         <h2 className="text-lg font-semibold">Resumen del pedido</h2>
         <div className="mt-4 flex items-center justify-between border-b border-border-soft pb-4">
-          <span className="text-text-300">{APP_NAME} — Licencia completa</span>
-          <span className="font-bold">{PRICE_DISPLAY}</span>
+          <div>
+            <span className="text-text-300">{APP_NAME} — Plan {plan.name}</span>
+            <p className="mt-1 text-xs text-text-500">
+              {plan.conversionsPerMonth === -1
+                ? "Conversiones ilimitadas"
+                : `${plan.conversionsPerMonth} conversiones/mes`}
+              {" \u00b7 "}
+              {plan.voiceProfiles === -1
+                ? "Perfiles ilimitados"
+                : `${plan.voiceProfiles} perfil${plan.voiceProfiles > 1 ? "es" : ""}`}
+            </p>
+          </div>
+          <span className="font-bold">{plan.priceDisplay}</span>
         </div>
         <div className="mt-4 flex items-center justify-between">
-          <span className="font-semibold">Total</span>
-          <span className="text-xl font-bold">{PRICE_DISPLAY}</span>
+          <span className="font-semibold">Total mensual</span>
+          <span className="text-xl font-bold">{plan.priceDisplay}</span>
         </div>
+        <p className="mt-2 text-xs text-text-500">
+          {plan.priceUsdApprox}/mes &middot; Cancela en cualquier momento
+        </p>
       </div>
+
+      {/* Plan switcher */}
+      {planId !== "unlimited" && (
+        <div className="mt-4 rounded-xl border border-border-soft bg-bg-900/40 p-4">
+          <p className="text-sm text-text-300">
+            {planId === "pro"
+              ? "\u00bfNecesitas conversiones ilimitadas?"
+              : "\u00bfQuieres m\u00e1s conversiones?"}
+            {" "}
+            <a
+              href={`/checkout?plan=${planId === "pro" ? "unlimited" : "pro"}`}
+              className="text-primary-400 underline"
+            >
+              Cambiar a {planId === "pro" ? "Unlimited" : "Pro"}
+            </a>
+          </p>
+        </div>
+      )}
 
       {/* Legal checkboxes */}
       <div className="mt-6 space-y-3">
@@ -136,13 +183,13 @@ export default function CheckoutPage() {
             className="mt-0.5 h-4 w-4 rounded border-border-strong bg-surface-800 text-primary-500 focus:ring-primary-400"
           />
           <span className="text-text-300">
-            He leído y acepto los{" "}
+            He le&iacute;do y acepto los{" "}
             <a
               href="/legal/terminos"
               target="_blank"
               className="text-primary-400 underline"
             >
-              Términos y Condiciones
+              T&eacute;rminos y Condiciones
             </a>
           </span>
         </label>
@@ -172,20 +219,33 @@ export default function CheckoutPage() {
         <p className="mt-4 text-sm text-danger-500">{error}</p>
       )}
 
-      <Button
-        size="lg"
-        className="mt-8 w-full"
+      <button
+        className="mt-8 w-full inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary-500 to-accent-violet px-8 py-4 text-base font-semibold text-white shadow-[0_0_24px_rgba(109,124,255,0.3)] transition-all duration-200 hover:shadow-[0_0_32px_rgba(109,124,255,0.45)] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400 disabled:opacity-40 disabled:cursor-not-allowed"
         disabled={!canProceed || isCreating}
         onClick={handleCheckout}
       >
-        {isCreating ? "Preparando pago..." : `Pagar ${PRICE_DISPLAY}`}
-      </Button>
+        {isCreating ? "Preparando pago..." : `Suscribirse — ${plan.priceDisplay}/mes`}
+      </button>
 
       <p className="mt-4 text-center text-xs text-text-500">
         Pago procesado por Wompi (Bancolombia). Tus datos de tarjeta nunca
         pasan por nuestros servidores.
       </p>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <p className="text-text-300">Cargando checkout...</p>
+        </div>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
   );
 }
 

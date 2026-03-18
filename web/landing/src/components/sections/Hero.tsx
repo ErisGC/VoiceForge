@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
-import { PRICE_DISPLAY } from "@/lib/constants";
+import { PLANS } from "@/lib/constants";
 
 export function Hero() {
   return (
@@ -55,15 +55,15 @@ export function Hero() {
 
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Button size="lg" href="#precio">
-                Comprar por {PRICE_DISPLAY}
+                Empezar gratis
               </Button>
               <Button variant="secondary" size="lg" href="#como-funciona">
-                Ver cómo funciona
+                Ver c&oacute;mo funciona
               </Button>
             </div>
 
             <p className="mt-4 text-xs text-text-500">
-              Pago único. Sin suscripciones. Incluye todas las actualizaciones.
+              Plan gratuito disponible. Pro desde {PLANS.pro.priceDisplay}/mes.
             </p>
           </motion.div>
 

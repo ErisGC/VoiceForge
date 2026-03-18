@@ -88,12 +88,19 @@ export default function TermsPage() {
         <li>Sobrecargar intencionalmente los servidores o la infraestructura</li>
       </ul>
 
-      <h2>8. Pagos y facturación</h2>
+      <h2>8. Pagos, suscripciones y facturaci&oacute;n</h2>
       <p>
-        {APP_NAME} procesa pagos a través de Wompi (Bancolombia), pasarela
+        {APP_NAME} ofrece planes de suscripci&oacute;n mensual (Gratis, Pro, Unlimited).
+        Los pagos se procesan a trav&eacute;s de Wompi (Bancolombia), pasarela
         certificada PCI DSS. Los datos de tarjeta nunca son almacenados ni
-        procesados por {APP_NAME}. La confirmación de pago se realiza
-        exclusivamente mediante webhook verificado criptográficamente.
+        procesados por {APP_NAME}. La confirmaci&oacute;n de pago se realiza
+        exclusivamente mediante webhook verificado criptogr&aacute;ficamente.
+      </p>
+      <p>
+        Las suscripciones se renuevan autom&aacute;ticamente cada mes. El usuario
+        puede cancelar en cualquier momento desde su cuenta. La cancelaci&oacute;n
+        surte efecto al final del per&iacute;odo de facturaci&oacute;n vigente.
+        El plan gratuito est&aacute; siempre disponible sin necesidad de pago.
       </p>
 
       <h2>9. Modificaciones a los términos</h2>

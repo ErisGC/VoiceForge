@@ -26,9 +26,9 @@ const ITEMS: FAQItem[] = [
       "Con 3 a 5 muestras claras de 10-30 segundos ya puedes obtener buenos resultados. Mientras más muestras variadas subas, más fiel será la transformación. El sistema te muestra un indicador de calidad que sube a medida que añades material.",
   },
   {
-    question: "¿Cómo descargo la app después de pagar?",
+    question: "\u00bfC\u00f3mo descargo la app despu\u00e9s de suscribirme?",
     answer:
-      "Inmediatamente después del pago exitoso accedes a tu página de descarga. Desde ahí bajas el APK de Android directamente. Solo necesitas habilitar la instalación desde orígenes desconocidos en tu celular.",
+      "Inmediatamente despu\u00e9s del pago exitoso accedes a tu p\u00e1gina de descarga. Desde ah\u00ed bajas el APK de Android directamente. Solo necesitas habilitar la instalaci\u00f3n desde or\u00edgenes desconocidos en tu celular. Tambi\u00e9n puedes usar la versi\u00f3n web desde cualquier navegador.",
   },
   {
     question: "¿Puedo clonar cualquier voz?",
@@ -36,9 +36,9 @@ const ITEMS: FAQItem[] = [
       "VoiceForge exige consentimiento explícito para cada perfil de voz creado. Solo debes clonar voces de personas que te hayan autorizado expresamente. El uso sin consentimiento viola nuestros términos de servicio y puede tener consecuencias legales.",
   },
   {
-    question: "¿Cuál es la política de reembolso?",
+    question: "\u00bfCu\u00e1l es la pol\u00edtica de reembolso y cancelaci\u00f3n?",
     answer:
-      "Ofrecemos reembolso completo dentro de los 7 días posteriores a la compra si no has realizado más de 3 conversiones. Después de ese plazo o con más de 3 conversiones, no se otorgan reembolsos. Consulta nuestra Política de Reembolso para más detalles.",
+      "Puedes cancelar tu suscripci\u00f3n en cualquier momento. Ofrecemos reembolso completo dentro de los 7 d\u00edas posteriores al primer pago si no has realizado m\u00e1s de 3 conversiones. Despu\u00e9s de ese plazo, no se otorgan reembolsos pero puedes cancelar para que no se renueve. El plan gratuito est\u00e1 siempre disponible.",
   },
   {
     question: "¿Mis datos de pago están seguros?",
