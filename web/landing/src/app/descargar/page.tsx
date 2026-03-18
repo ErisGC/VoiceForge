@@ -2,10 +2,10 @@ import { getSession } from "@auth0/nextjs-auth0";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { APP_NAME, CONTACT_EMAIL } from "@/lib/constants";
-import { Button } from "@/components/ui/Button";
+import { DownloadClient } from "./DownloadClient";
 
 export const metadata: Metadata = {
-  title: `Descargar — ${APP_NAME}`,
+  title: `Descargar \u2014 ${APP_NAME}`,
   robots: { index: false, follow: false },
 };
 
@@ -13,25 +13,25 @@ const INSTALL_STEPS = [
   {
     step: "1",
     title: "Descarga el APK",
-    detail: "Haz clic en el botón de descarga. El archivo se guardará en tu carpeta de descargas.",
+    detail: "Haz clic en el bot\u00f3n de descarga. El archivo se guardar\u00e1 en tu carpeta de descargas.",
   },
   {
     step: "2",
-    title: "Habilita orígenes desconocidos",
+    title: "Habilita or\u00edgenes desconocidos",
     detail:
-      "Ve a Configuración > Seguridad > Orígenes desconocidos (o Instalar apps desconocidas) y activa el permiso para tu navegador.",
+      "Ve a Configuraci\u00f3n > Seguridad > Or\u00edgenes desconocidos (o Instalar apps desconocidas) y activa el permiso para tu navegador.",
   },
   {
     step: "3",
     title: "Instala la app",
     detail:
-      "Abre el archivo APK descargado. Tu dispositivo te pedirá confirmar la instalación. Acepta y espera a que termine.",
+      "Abre el archivo APK descargado. Tu dispositivo te pedir\u00e1 confirmar la instalaci\u00f3n. Acepta y espera a que termine.",
   },
   {
     step: "4",
     title: "Abre VoiceForge",
     detail:
-      "Busca VoiceForge en tu lista de aplicaciones y ábrela. Inicia sesión con la misma cuenta que usaste para comprar.",
+      "Busca VoiceForge en tu lista de aplicaciones y \u00e1brela. Inicia sesi\u00f3n con la misma cuenta que usaste para comprar.",
   },
 ];
 
@@ -42,7 +42,7 @@ export default async function DownloadPage() {
     redirect("/api/auth/login");
   }
 
-  // Check purchase status
+  // Check purchase status via internal API fetch
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   let hasPurchase = false;
 
@@ -82,9 +82,14 @@ export default async function DownloadPage() {
         <p className="mt-3 text-text-300">
           Para acceder a la descarga necesitas comprar {APP_NAME} primero.
         </p>
-        <Button size="lg" href="/#precio" className="mt-8">
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- hash link to anchor on home page */}
+        <a
+          href="/#precio"
+          className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-primary-500 to-accent-violet px-8 py-4 text-base font-semibold text-white shadow-[0_0_24px_rgba(109,124,255,0.3)] transition-all duration-200 hover:shadow-[0_0_32px_rgba(109,124,255,0.45)] hover:brightness-110"
+          role="button"
+        >
           Ver precio y comprar
-        </Button>
+        </a>
       </div>
     );
   }
@@ -108,39 +113,14 @@ export default async function DownloadPage() {
             />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold">Tu descarga está lista</h1>
+        <h1 className="text-2xl font-bold">Tu descarga est\u00e1 lista</h1>
         <p className="mt-2 text-text-300">
           Hola, {session.user.name ?? session.user.email}. Gracias por comprar {APP_NAME}.
         </p>
       </div>
 
-      {/* Download button */}
-      <div className="mt-10 rounded-2xl border border-primary-500/30 bg-surface-800/50 p-8 text-center">
-        <h2 className="text-lg font-semibold">VoiceForge para Android</h2>
-        <p className="mt-1 text-sm text-text-500">Versión 1.0.0 &middot; APK &middot; ~25 MB</p>
-
-        <Button size="lg" className="mt-6">
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="2"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
-            />
-          </svg>
-          Descargar APK
-        </Button>
-
-        <p className="mt-3 text-xs text-text-500">
-          El enlace de descarga es personal y temporal.
-        </p>
-      </div>
+      {/* Download button — client component for signed URL generation */}
+      <DownloadClient />
 
       {/* Play Store badge */}
       <div className="mt-6 rounded-xl border border-border-soft bg-bg-900/60 p-4 text-center">
@@ -148,13 +128,13 @@ export default async function DownloadPage() {
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 01-.61-.92V2.734a1 1 0 01.609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.243 1.3a1 1 0 010 1.733l-2.243 1.299L15.207 12l2.49-2.492zM5.864 2.658L16.8 8.99l-2.302 2.302-8.635-8.635z" />
           </svg>
-          Próximamente en Google Play
+          Pr\u00f3ximamente en Google Play
         </span>
       </div>
 
       {/* Installation instructions */}
       <div className="mt-12">
-        <h2 className="text-xl font-bold">Instrucciones de instalación</h2>
+        <h2 className="text-xl font-bold">Instrucciones de instalaci\u00f3n</h2>
         <div className="mt-6 space-y-6">
           {INSTALL_STEPS.map((item) => (
             <div key={item.step} className="flex gap-4">
@@ -181,9 +161,9 @@ export default async function DownloadPage() {
             <span className="text-xs text-text-500">Marzo 2026</span>
           </div>
           <ul className="mt-2 space-y-1 text-sm text-text-300">
-            <li>Creación de perfiles de voz con múltiples muestras</li>
-            <li>Conversión de voz con Seed-VC (alta calidad)</li>
-            <li>Grabación directa por micrófono</li>
+            <li>Creaci\u00f3n de perfiles de voz con m\u00faltiples muestras</li>
+            <li>Conversi\u00f3n de voz con Seed-VC (alta calidad)</li>
+            <li>Grabaci\u00f3n directa por micr\u00f3fono</li>
             <li>Reproductor de resultados integrado</li>
             <li>Soporte para Android y Web</li>
           </ul>
@@ -192,12 +172,12 @@ export default async function DownloadPage() {
 
       {/* Support */}
       <div className="mt-8 text-center text-sm text-text-500">
-        ¿Problemas con la instalación?{" "}
+        \u00bfProblemas con la instalaci\u00f3n?{" "}
         <a
           href={`mailto:${CONTACT_EMAIL}`}
           className="text-primary-400 underline"
         >
-          Contáctanos
+          Cont\u00e1ctanos
         </a>
       </div>
     </div>
