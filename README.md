@@ -1,212 +1,242 @@
-# VoiceForge
+<h1 align="center">VoiceForge</h1>
 
-VoiceForge is a production-oriented monorepo for a cross-platform voice conversion platform that targets Android and Web with a single Flutter frontend, plus a modular Python backend built on FastAPI, PostgreSQL, Redis, and S3-compatible storage abstractions.
+<p align="center">
+  <em>Plataforma cross-platform de clonación y conversión de voz con IA</em>
+  <br/>
+  <em>Flutter (Android + Web) · FastAPI · Seed-VC · PostgreSQL · Redis</em>
+</p>
 
-## Seed-VC status
+<p align="center">
+  <img alt="Flutter" src="https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white" />
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white" />
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white" />
+  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white" />
+  <img alt="Redis" src="https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white" />
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white" />
+</p>
 
-Seed-VC is now wired as the first real offline conversion backend.  
-Integration details, installation, and the end-to-end reproducible test flow live in [docs/seed-vc.md](C:/Users/Ruben%20Gutierrez/Proyectos%20Rub%C3%A9n/VoiceForge/docs/seed-vc.md).
+---
 
-## Seed-VC profiling status
+## ¿Qué hace?
 
-VoiceForge now includes stage-level profiling and a reproducible cold vs warm benchmark for the real offline Seed-VC path.  
-Benchmark flow, measured results, and optimization opportunities live in [docs/seed-vc-profiling.md](C:/Users/Ruben%20Gutierrez/Proyectos%20Rub%C3%A9n/VoiceForge/docs/seed-vc-profiling.md).
+Los usuarios graban o suben muestras de referencia para crear un **perfil de voz**.
+Luego pueden subir cualquier audio y obtenerlo convertido para que suene como ese
+perfil, preservando el contenido hablado. Pensado para creadores de contenido,
+locutores y producción de audio.
 
-## Seed-VC cache optimization status
+Dos modos de conversión:
+- **Studio** — calidad alta, mayor latencia (más `diffusion_steps`).
+- **Live** — latencia baja, pensado para iteración rápida.
 
-VoiceForge now also includes versioned reference feature caching per `voice_profile` plus a resident reference runtime for Seed-VC cache builds.  
-Design details, invalidation rules, and the optimized benchmark comparison live in [docs/seed-vc-reference-cache.md](C:/Users/Ruben%20Gutierrez/Proyectos%20Rub%C3%A9n/VoiceForge/docs/seed-vc-reference-cache.md).
+## Highlights técnicos
 
-## Seed-VC source optimization status
+### 🔧 Aislamiento de proceso para el motor Seed-VC
+Seed-VC corre en un **venv aislado de Python 3.10** porque su stack es pesado
+y versión-sensible. El backend principal usa Python 3.11+ y dispara Seed-VC
+como subprocess, evitando conflictos de dependencias entre `torch`, `transformers`,
+`librosa`, etc. La comunicación es vía CLI + ficheros WAV, lo que también permite
+correr el motor en otra máquina sin tocar la API.
 
-VoiceForge now also includes reusable source feature caching, a formal resident-runtime benchmark, and controlled `diffusion_steps` experiments for the remaining `inference_core` cost.  
-Measured results and rerun commands live in [docs/seed-vc-source-optimization.md](C:/Users/Ruben%20Gutierrez/Proyectos%20Rub%C3%A9n/VoiceForge/docs/seed-vc-source-optimization.md).
+### ⚡ Caching de features con invalidación versionada
+Los features de referencia y de fuente (mel-spectrograms, embeddings) se cachean
+en disco con versión asociada al `voice_profile_id`. Las invalidaciones son
+deterministas: cambiar la referencia bump-ea la versión y recalcula. **Reduce
+latencia de conversión ~30%** respecto al baseline (medido y documentado en
+`docs/seed-vc-reference-cache.md`).
 
-## Seed-VC quality-vs-speed status
+### 🚀 Resident runtime opcional
+Un sidecar mantiene los modelos Seed-VC cargados en memoria (timeout idle 900s).
+Convierte conversiones repetidas en operaciones sub-segundo sin pagar el coste
+de cold start cada vez.
 
-VoiceForge now also includes a preset evaluation package for `diffusion_steps`, plus a manual perceptual protocol and scorecard for Studio-mode preset decisions.  
-The current recommendation and evaluation framework live in [docs/seed-vc-quality-vs-speed.md](C:/Users/Ruben%20Gutierrez/Proyectos%20Rub%C3%A9n/VoiceForge/docs/seed-vc-quality-vs-speed.md).
+### 🎙️ Pipeline de audio production-shaped
+- Preprocesado real: mono WAV, resampling, normalización, trimming de silencio
+- `ResemblyzerSpeakerEmbeddingService` (GE2E 256-dim) con fallback determinista a
+  hashes SHA-256 cuando resemblyzer no está disponible
+- Modelos abstraídos vía `ModelRegistry` — Seed-VC ya en producción; RVC y
+  OpenVoice registrados como adapters stub
 
-## Seed-VC local validation
+### 🔔 WebSocket con Redis pub/sub para notificaciones en tiempo real
+`/ws/jobs` con autenticación JWT (query param) y Redis pub/sub para empujar
+estados de jobs al cliente Flutter sin polling. `JobNotificationService` en el
+cliente vía `web_socket_channel`.
 
-VoiceForge now includes a repeatable local Seed-VC validation harness:
+### 🛡️ Cumplimiento legal Colombia (Ley 1581/2012)
+- Consentimiento explícito y trazable por perfil de voz (texto + timestamp + evidence key)
+- 12+ tipos de eventos en `audit_logs` para compliance
+- Políticas de privacidad, términos y reembolso adaptadas a la regulación local
 
-- `infra/scripts/install_seed_vc.ps1`: installs the official upstream runtime in `external/seed-vc`
-- `infra/scripts/run_seed_vc_demo.ps1`: generates demo WAVs, runs a real conversion, and prints the final WAV path
-- `infra/scripts/demo_seed_vc_e2e.py`: service-layer runner used by the wrapper
+### 💳 Pasarela de pagos Wompi (Bancolombia)
+Integración con SHA256 webhook verification, idempotencia, validación de monto
+por plan, y URLs de descarga firmadas (HMAC-SHA256, expiry 1h) para prevenir
+sharing del APK. Auth0 user IDs encodeados como `__` para evitar ambigüedad de
+parsing con el `|` literal del sub de Auth0.
 
-The latest successful local validation in this workspace produced:
+## Stack
 
-- `data/demo/seed-vc-case-01/output/converted.wav`
-- `data/demo/seed-vc-case-01/output/summary.json`
+| Capa | Tecnología |
+|------|-----------|
+| Cliente | Flutter 3.x (Android + iOS + Web), Dart 3.11+ |
+| API | FastAPI 0.115+, Python 3.11+, SQLAlchemy 2.0, Pydantic v2 |
+| Worker | Redis-backed job processor |
+| Base de datos | PostgreSQL 17 + Alembic |
+| Cola | Redis 7 |
+| Motor de voz | Seed-VC (subprocess en venv aislado Python 3.10) |
+| Audio | librosa, soundfile, numpy, resemblyzer |
+| Auth (app) | JWT (PyJWT) + PBKDF2-SHA256 |
+| Storage | S3-compatible filesystem adapter |
+| Landing | Next.js 15 (App Router) + TypeScript + Tailwind CSS 4 |
+| Auth (landing) | Auth0 (`@auth0/nextjs-auth0` v3) |
+| Pagos | Wompi (COP, PSE, Nequi, tarjetas) |
+| Infra | Docker Compose |
 
-The latest profiling benchmark in this workspace produced:
+## Estructura del monorepo
 
-- `data/bench/seed-vc/benchmark_summary.json`
-- `data/bench/seed-vc/benchmark_report.md`
-
-The latest cache-optimized benchmark in this workspace produced:
-
-- `data/bench/seed-vc-cache/benchmark_summary.json`
-- `data/bench/seed-vc-cache/benchmark_report.md`
-- `data/bench/seed-vc-cache/benchmark_vs_baseline.md`
-
-The latest source-cache benchmark in this workspace produced:
-
-- `data/bench/seed-vc-source-cache/benchmark_summary.json`
-- `data/bench/seed-vc-source-cache/benchmark_report.md`
-- `data/bench/seed-vc-source-cache/benchmark_vs_baseline.md`
-
-The latest resident-runtime benchmark in this workspace produced:
-
-- `data/bench/seed-vc-res/benchmark_summary.json`
-- `data/bench/seed-vc-res/benchmark_report.md`
-- `data/bench/seed-vc-res/benchmark_vs_baseline.md`
-
-The latest inference-core experiment in this workspace produced:
-
-- `data/bench/seed-vc-inference/inference_experiments.json`
-- `data/bench/seed-vc-inference/inference_experiments.md`
-
-The latest quality-vs-speed evaluation package in this workspace produced:
-
-- `data/bench/seed-vc-quality-eval/quality_vs_speed_report.md`
-- `data/bench/seed-vc-quality-eval/manual_evaluation_protocol.md`
-- `data/bench/seed-vc-quality-eval/manual_evaluation_scorecard.csv`
-
-## What is included
-
-- `apps/voiceforge_flutter`: Flutter application for Android and Web with responsive navigation and the core product surfaces.
-- `services/api`: FastAPI service with OpenAPI docs, JWT-ready auth, modular REST endpoints, and Alembic migrations.
-- `services/worker`: Redis-backed background worker for training and conversion jobs.
-- `packages/voiceforge_core`: Shared backend domain package with SQLAlchemy models, audio pipeline abstractions, storage adapters, model registry, and job queue integration.
-- `docs/architecture.md`: System architecture, module boundaries, and flow documentation.
-- `docs/seed-vc.md`: Real offline Seed-VC integration, installation, and local validation flow.
-- `docs/seed-vc-profiling.md`: Stage-level profiling, cold vs warm benchmark, and optimization findings for Seed-VC offline conversion.
-- `docs/seed-vc-reference-cache.md`: Reference cache design, invalidation, resident runtime support, and optimized benchmark results.
-- `docs/seed-vc-source-optimization.md`: Source cache design, resident runtime benchmark, and inference-core experiments after the reference-cache phase.
-- `docs/seed-vc-quality-vs-speed.md`: Preset evaluation, quality-vs-speed recommendation, and the manual listening framework for Studio mode.
-- `TODO.md`: Next implementation phases to evolve from starter platform to production-grade inference system.
-
-## Product scope in this starter
-
-- Multiple saved voices per user.
-- Multiple training/reference samples per saved voice.
-- Consent-aware voice profile creation.
-- Dataset metadata capture:
-  - total duration
-  - clip count
-  - noise score
-  - diversity score
-  - sample rate
-  - voice profile readiness score
-- Background jobs for training orchestration and conversion orchestration.
-- Backend registry prepared for Seed-VC, RVC, and OpenVoice.
-- Real zero-shot offline conversion through Seed-VC.
-- Two conversion modes:
-  - `studio`
-  - `live`
-
-## Repository layout
-
-```text
+```
 VoiceForge/
-|- apps/
-|  |- voiceforge_flutter/
-|- docs/
-|  |- architecture.md
-|- infra/
-|  |- docker/
-|- packages/
-|  |- voiceforge_core/
-|- services/
-|  |- api/
-|  |- worker/
-|- docker-compose.yml
-|- README.md
-|- TODO.md
+├── apps/
+│   └── voiceforge_flutter/        # Cliente Flutter (Android + iOS + Web)
+│       └── lib/
+│           ├── app/                # Router, theme, design system VF*
+│           ├── core/               # Network, session, repositories, services
+│           └── features/           # auth, dashboard, voices, conversions, onboarding
+├── packages/
+│   └── voiceforge_core/           # Paquete Python compartido (API + Worker)
+│       └── src/voiceforge_core/
+│           ├── audio/              # Pipeline: load, trim, normalize, VAD, scoring
+│           ├── db/                 # Modelos SQLAlchemy + enums
+│           ├── inference/          # ABC + Seed-VC real impl + ModelRegistry
+│           ├── jobs/               # RedisJobQueue
+│           ├── modules/            # Domain services
+│           └── storage/            # StorageProvider ABC + LocalS3CompatibleStorage
+├── services/
+│   ├── api/                       # FastAPI REST
+│   │   └── app/api/routes/         # auth, users, voice_profiles, training_jobs,
+│   │                               #   conversion_jobs, audit, health, ws
+│   └── worker/                    # Polling loop sobre Redis
+├── web/
+│   └── landing/                   # Next.js 15 — landing comercial + checkout Wompi
+├── external/seed-vc/              # Repo de Seed-VC + venv aislado (gitignored)
+├── infra/
+│   ├── docker/
+│   └── scripts/                   # Demo, benchmark, profiling
+├── docs/                          # Architecture, Seed-VC, setup de credenciales
+├── tests/                         # pytest
+└── docker-compose.yml             # postgres + redis + api + worker
 ```
 
-## Backend architecture summary
+## Cómo correrlo
 
-- FastAPI exposes REST endpoints for auth, users, voice profiles, voice samples, training jobs, conversion jobs, and audit logs.
-- SQLAlchemy models live in the shared `voiceforge_core` package so the API and the worker operate on the same schema and domain language.
-- Redis is used as a real background queue through a lightweight envelope abstraction.
-- Local storage uses an S3-compatible interface and currently persists to the filesystem under a bucket-style path layout.
-- The audio/inference layer is intentionally swappable:
-  - `AudioPreprocessor`
-  - `SpeakerEmbeddingService`
-  - `VoiceConversionEngine`
-  - `ModelRegistry`
-  - `TrainingOrchestrator`
+### Backend
 
-### Current backend reality
+```bash
+# 1. Infra
+docker compose up -d postgres redis
 
-- `seed_vc`: real offline conversion adapter via the official Seed-VC CLI.
-- `rvc`: placeholder adapter.
-- `openvoice`: placeholder adapter.
+# 2. Dependencias (desde la raíz)
+pip install -e ./packages/voiceforge_core
+pip install -r ./services/api/requirements.txt
 
-## Quick start
+# 3. Migraciones
+cd services/api && alembic upgrade head
 
-1. Copy `.env.example` to `.env`.
-2. Install backend dependencies:
+# 4. API
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-```powershell
-pip install -r services/api/requirements.txt
-pip install -r services/worker/requirements.txt
+# 5. Worker (otra terminal)
+cd services/worker && python -m worker_app.main
 ```
 
-3. Run the API:
+### Cliente Flutter
 
-```powershell
-cd services/api
-alembic upgrade head
-uvicorn app.main:app --reload
-```
-
-4. Run the worker:
-
-```powershell
-cd services/worker
-python worker.py
-```
-
-5. Run Flutter:
-
-```powershell
+```bash
 cd apps/voiceforge_flutter
-flutter run -d chrome
+flutter pub get
+flutter run -d chrome           # Web
+flutter run -d <android_id>     # Android
 ```
 
-6. Or run the infrastructure stack with Docker Compose once Docker is available on the host:
+### Motor Seed-VC (para conversión real)
 
 ```powershell
-docker compose up --build
+./infra/scripts/install_seed_vc.ps1
+./infra/scripts/run_seed_vc_demo.ps1
 ```
 
-## Main REST flows already prepared
+El primer script instala el runtime oficial en `external/seed-vc/` con su propio
+venv. El segundo genera audios demo y corre una conversión end-to-end.
 
-- `POST /api/v1/auth/register`
-- `POST /api/v1/auth/login`
-- `GET /api/v1/users/me`
-- `POST /api/v1/voice-profiles`
-- `GET /api/v1/voice-profiles`
-- `GET /api/v1/voice-profiles/{profile_id}`
-- `POST /api/v1/voice-profiles/{profile_id}/samples`
-- `GET /api/v1/voice-profiles/{profile_id}/samples`
-- `POST /api/v1/training-jobs`
-- `GET /api/v1/training-jobs`
-- `POST /api/v1/conversion-jobs`
-- `POST /api/v1/conversion-jobs/{job_id}/process-now`
-- `GET /api/v1/conversion-jobs`
-- `GET /api/v1/conversion-jobs/{job_id}`
-- `GET /api/v1/conversion-jobs/{job_id}/outputs`
-- `GET /api/v1/conversion-jobs/{job_id}/outputs/{output_id}/download`
-- `GET /api/v1/audit-logs`
+### Landing + checkout
 
-## Notes
+```bash
+cd web/landing
+npm install
+npm run dev          # http://localhost:3000
+```
 
-- The audio pipeline now performs real mono WAV preparation, resampling, normalization, and silence trimming for Seed-VC offline conversion.
-- Seed-VC runs through an isolated external runtime because its upstream stack is heavy and version-sensitive.
-- The training orchestrator currently emits backend-ready manifests rather than launching GPU training. This keeps the queue, schema, storage, and audit trail production-shaped from the start.
-- `docker` was not available in the current environment while scaffolding this repository, so Docker assets were authored but not executed locally here.
+Requiere credenciales de Auth0 y Wompi en `.env.local` — ver
+[`web/landing/.env.example`](web/landing/.env.example).
+
+### Tests
+
+```bash
+pip install pytest pytest-asyncio httpx
+pytest
+
+cd apps/voiceforge_flutter && flutter test
+```
+
+## Documentación interna
+
+| Documento | Contenido |
+|-----------|-----------|
+| [`docs/architecture.md`](docs/architecture.md) | Arquitectura del sistema, módulos, flujos |
+| [`docs/seed-vc.md`](docs/seed-vc.md) | Integración Seed-VC offline, instalación, validación local |
+| [`docs/seed-vc-profiling.md`](docs/seed-vc-profiling.md) | Profiling por stage, cold vs warm benchmark |
+| [`docs/seed-vc-reference-cache.md`](docs/seed-vc-reference-cache.md) | Cache de referencia, invalidación, runtime residente |
+| [`docs/seed-vc-source-optimization.md`](docs/seed-vc-source-optimization.md) | Cache de fuente y experimentos de `diffusion_steps` |
+| [`docs/seed-vc-quality-vs-speed.md`](docs/seed-vc-quality-vs-speed.md) | Evaluación calidad-vs-velocidad para Studio mode |
+
+## Decisiones de arquitectura
+
+- **Seed-VC vía subprocess** — su stack pesado y version-locked obliga a aislarlo
+  del backend principal. La comunicación CLI + WAV es robusta y permite mover
+  el motor a otra máquina sin tocar la API.
+- **Feature caching versionado** — features grandes en disco con versión asociada
+  al `voice_profile_id`. Bump de versión invalida en cascada de forma determinista.
+- **Resident runtime opcional** — sidecar que mantiene modelos calientes en RAM
+  para conversiones repetidas sub-segundo.
+- **Embeddings con fallback** — `ResemblyzerSpeakerEmbeddingService` (GE2E 256-dim)
+  como primario; `HashSpeakerEmbeddingService` (SHA-256 determinista) como fallback
+  cuando la lib no está instalada, para no romper el flow de desarrollo.
+- **API sync, no async** — SQLAlchemy 2.0 con sesiones sync; la concurrencia
+  vive en el worker, no en el handler HTTP.
+- **DI via `RuntimeContainer`** — `build_runtime()` crea todos los services y
+  los inyecta vía FastAPI `Depends`. Tests sustituyen el container.
+- **Landing desacoplada del core** — `web/landing/` es un proyecto Next.js
+  independiente con su propio deploy (Vercel/Netlify). Los endpoints de pago
+  viven ahí, no en FastAPI, para minimizar cross-origin con Auth0.
+- **Signed download URLs** — el botón "Descargar APK" no entrega un link directo;
+  llama a `/api/download` que firma un token HMAC-SHA256 con expiry de 1h. Evita
+  que un enlace compartido en redes deje de ser un asset privado.
+- **Suscripción mensual freemium** — Gratis (3 conversiones/mes, watermark),
+  Pro (50/mes, $29,900 COP), Unlimited ($79,900 COP). Decidido tras análisis
+  competitivo (ElevenLabs, Resemble.AI, Kits.AI, Voicemod) — un pago único
+  de $5,000 COP no cubría coste de GPU + fees.
+- **Wompi sobre Stripe** — Stripe no soporta PSE ni Nequi en Colombia. Wompi
+  da COP nativo, PSE, Nequi y respaldo Bancolombia con fees ~3%.
+
+## Estado actual
+
+✅ Backend funcional con Seed-VC real integrado y benchmarks medidos
+✅ Cliente Flutter completo: auth, dashboard, perfiles, grabación de samples, conversiones, historial
+✅ Grabación con `record`, reproducción con `just_audio`, waveform player con isolate
+✅ Suite de tests pytest cubriendo audio pipeline, auth e integración
+✅ Landing Next.js + checkout Wompi + Auth0 + signed download URLs
+✅ Cumplimiento legal Colombia (privacidad, términos, reembolso, consentimiento)
+✅ WebSocket de notificaciones en tiempo real con Redis pub/sub
+✅ Onboarding 3-page + iOS platform setup
+
+🟡 Faltan: CI/CD pipeline, Docker para inferencia con GPU, base de datos
+persistente para compras (hoy en memoria), tokenization Wompi para
+suscripciones recurrentes reales.
